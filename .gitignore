@@ -1,0 +1,16 @@
+# Build artifacts
+*.o
+*.out
+a.out
+lex.yy.c
+parser.tab.c
+parser.tab.h
+parser.output
+tinyc
+
+# Output files
+output/*.txt
+output/*.asm
+
+# Editor files
+.vscode/
