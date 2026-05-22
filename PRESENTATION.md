@@ -52,7 +52,38 @@ flowchart TB
   TAC --> ASM[Assembly]
 ```
 
-## 5. Inputs and Outputs by Phase
+## 5. Compiler Phases (Details)
+**Lexer (Flex)**
+- Scans characters and matches regex rules for keywords, identifiers, literals, operators, separators.
+- Ignores comments and whitespace, tracks line numbers.
+- Emits tokens to output/tokens.txt and passes token IDs to the parser.
+
+**Parser (Bison)**
+- Validates grammar and reports syntax errors with line numbers.
+- Builds AST nodes in grammar actions using `ast_create()`.
+- Prints "Parsing Successful" on valid input.
+
+**AST Construction**
+- AST nodes capture statement and expression structure.
+- Statement lists are chained using `AST_STMT_LIST` nodes.
+- AST is printed to terminal and output/parser_output.txt.
+
+**Symbol Table + Semantics**
+- Inserts declarations with name, type, scope, line.
+- Detects duplicate declarations and undeclared variable usage.
+- Checks simple type mismatches in assignments and expressions.
+
+**TAC Generation**
+- Traverses AST and emits three-address code using temporaries.
+- Control flow creates labels and conditional jumps.
+- Output saved to output/tac.txt.
+
+**Pseudo Assembly Generation**
+- Maps TAC operations to readable instructions (MOV, ADD, MUL, CMP, JMP).
+- Uses a simple register model for clarity.
+- Output saved to output/assembly.asm.
+
+## 6. Inputs and Outputs by Phase
 - Lexer
   - Input: .tc source
   - Output: output/tokens.txt
@@ -69,7 +100,7 @@ flowchart TB
   - Input: TAC
   - Output: output/assembly.asm
 
-## 6. Example I/O
+## 7. Example I/O
 Input:
 ```
 int main() {
@@ -98,7 +129,7 @@ PRINT x
 RET 0
 ```
 
-## 7. Internal Diagrams
+## 8. Internal Diagrams
 
 AST Example:
 ```mermaid

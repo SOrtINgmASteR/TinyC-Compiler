@@ -84,6 +84,13 @@ CSE_430_TinyC/
   - Ignore comments and whitespace
   - Track line numbers
 
+**Implementation Logic (Code-Level)**
+- The lexer patterns are defined using regular expressions for identifiers, numbers, strings, and operators.
+- Each matched token calls a small helper that prints a formatted line to the token output file.
+- For parser integration, tokens return a token ID (from parser.tab.h) and store values in `yylval`.
+- Comments (`//` and `/* ... */`) are ignored using start conditions, while whitespace is skipped.
+- Line numbers are tracked using `yylineno` for accurate error messages.
+
 **Lexer I/O**
 - Input: .tc source file
 - Output: token list, example:
@@ -107,6 +114,13 @@ sequenceDiagram
 - Grammar supports declarations, assignments, expressions, if/else, while, print, return
 - On success prints "Parsing Successful"
 
+**Implementation Logic (Code-Level)**
+- Grammar rules create AST nodes in each semantic action using `ast_create()`.
+- Statement lists are built using a linked-list style AST node (`AST_STMT_LIST`) via `ast_append()`.
+- The parser also triggers symbol table actions: declaration rules call `symtab_insert()`.
+- Expressions are evaluated for simple type compatibility (int/float) to catch mismatches early.
+- `yyerror()` prints syntax errors with line numbers for missing semicolons, braces, or invalid tokens.
+
 **Parser I/O**
 - Input: token stream
 - Output: AST root
@@ -120,6 +134,12 @@ flowchart LR
 ### 2.4 AST (Abstract Syntax Tree)
 - Nodes for declarations, assignments, expressions, control flow, print, return
 - Printed in indented form to terminal
+
+**Implementation Logic (Code-Level)**
+- `ast_create()` builds nodes with `kind`, `text`, and up to three child pointers.
+- `AST_STMT_LIST` nodes are used to chain sequential statements without complex containers.
+- `ast_print()` and `ast_print_to_file()` recursively print the tree with indentation.
+- The AST is the core structure used by TAC generation; it avoids parsing text again.
 
 **AST I/O**
 - Input: parser actions
@@ -141,6 +161,13 @@ flowchart TB
   - Undeclared usage
   - Type mismatch in assignments
 
+**Implementation Logic (Code-Level)**
+- The symbol table is a simple linked list with `name`, `type`, `scope`, and `line`.
+- `symtab_enter_scope()` and `symtab_leave_scope()` manage scope depth for `{}` blocks.
+- `symtab_insert()` checks duplicates in the current scope and records new variables.
+- `symtab_get_type()` is used in expressions to detect undeclared variables.
+- Semantic errors are reported immediately during parsing with line numbers.
+
 **Symbol Table I/O**
 - Input: declarations and identifier use
 - Output: output/symbol_table.txt
@@ -158,6 +185,12 @@ erDiagram
 ### 2.6 Three Address Code (TAC)
 - Generated from AST
 - Uses temporaries t1, t2, ...
+
+**Implementation Logic (Code-Level)**
+- The TAC generator traverses the AST recursively.
+- Expressions return a temporary name (`t1`, `t2`, ...) created by `new_temp()`.
+- Control flow (if/else, while) is translated using labels and conditional jumps.
+- TAC instructions are stored in a linked list, then printed to output/tac.txt.
 
 **TAC I/O**
 - Input: AST
@@ -177,6 +210,12 @@ flowchart LR
 
 ### 2.7 Pseudo Assembly Generation
 - Converts TAC into simple assembly-like instructions
+
+**Implementation Logic (Code-Level)**
+- Each TAC instruction is mapped to a small sequence of pseudo assembly.
+- Arithmetic uses a simple register `R1` to keep output easy to understand.
+- Conditional TAC operations are translated to `CMP` + jump instructions.
+- The output is textual only and is intended for learning, not real execution.
 
 **Assembly I/O**
 - Input: TAC
@@ -198,6 +237,12 @@ flowchart LR
 ### 2.8 Main Driver
 - Orchestrates all phases
 - Writes outputs to files and prints them to terminal
+
+**Implementation Logic (Code-Level)**
+- Opens input and all output files at startup.
+- Connects the lexer to the token output file via `g_token_out`.
+- Runs `yyparse()`; on success, prints AST, symbol table, TAC, and assembly.
+- Writes parser output to output/parser_output.txt and prints all output files to terminal.
 
 ---
 
@@ -223,6 +268,145 @@ int main() {
     }
 
     return 0;
+}
+```
+
+### 3.1.1 Additional Input Programs (For Demonstration)
+
+**Input A: Declarations + Assignments**
+```
+int main() {
+  int a;
+  int b;
+  a = 3;
+  b = a + 7;
+  print(b);
+  return 0;
+}
+```
+
+**Input B: If-Else + While**
+```
+int main() {
+  int x;
+  x = 0;
+  while (x < 3) {
+    if (x == 2) {
+      print("Two");
+    } else {
+      print("Other");
+    }
+    x = x + 1;
+  }
+  return 0;
+}
+```
+
+**Input C: Semantic Errors (Duplicate + Undeclared)**
+```
+int main() {
+  int x;
+  int x;
+  y = 10;
+  return 0;
+}
+```
+
+**Input D: Arithmetic Precedence**
+```
+int main() {
+  int a;
+  int b;
+  a = 2 + 3 * 4;
+  b = (2 + 3) * 4;
+  print(a);
+  print(b);
+  return 0;
+}
+```
+
+**Input E: Nested If-Else**
+```
+int main() {
+  int n;
+  n = 5;
+  if (n > 0) {
+    if (n > 3) {
+      print("Big");
+    } else {
+      print("Small");
+    }
+  } else {
+    print("Negative");
+  }
+  return 0;
+}
+```
+
+**Input F: While Loop with Decrement**
+```
+int main() {
+  int i;
+  i = 3;
+  while (i > 0) {
+    print(i);
+    i = i - 1;
+  }
+  return 0;
+}
+```
+
+**Input G: Mixed Types (int + float)**
+```
+int main() {
+  int x;
+  float y;
+  x = 2;
+  y = x + 1.5;
+  print(y);
+  return 0;
+}
+```
+
+**Input H: Function Above main (Addition)**
+```
+int add() {
+  int a;
+  int b;
+  a = 2;
+  b = 3;
+  print(a + b);
+  return 0;
+}
+
+int main() {
+  int x;
+  x = 10;
+  print(x);
+  return 0;
+}
+```
+
+**Input I: Function Above main (Maximum)**
+```
+int maximum() {
+  int a;
+  int b;
+  a = 7;
+  b = 5;
+  if (a > b) {
+    print(a);
+  } else {
+    print(b);
+  }
+  return 0;
+}
+
+int main() {
+  int v;
+  v = 1;
+  print(v);
+  return 0;
 }
 ```
 
