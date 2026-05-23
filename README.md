@@ -37,7 +37,8 @@ CSE_430_TinyC/
 │   ├── tokens.txt
 │   ├── symbol_table.txt
 │   ├── tac.txt
-│   └── assembly.asm
+│   ├── assembly.asm
+│   └── parser_output.txt
 ├── Makefile
 ├── README.md
 └── .gitignore
